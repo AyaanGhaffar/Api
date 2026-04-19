@@ -1,40 +1,33 @@
-```javascript
+import axios from 'axios';
+import * as cheerio from 'cheerio';
+
 export default async function handler(req, res) {
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
   const { q } = req.query;
-  
-  if (!q) {
-    return res.status(400).json({ error: 'Search query (q) is required' });
-  }
-
-  const results = [];
+  if (!q) return res.status(400).json({ error: 'Search query is required' });
 
   try {
-    // TODO: Insert your actual Pornhub search scraping logic here.
-    // Example: Fetch `https://www.pornhub.com/video/search?search=${encodeURIComponent(q)}`
-    // and parse the HTML using Cheerio to extract titles, thumbnails, and viewkeys.
-
-    /* Example of the expected result structure to push into the array:
-    results.push({
-      title: "Extracted Title from Search",
-      thumbnail: "https://via.placeholder.com/640x360",
-      duration: "10:05",
-      source: 'pornhub.com',
-      originalUrl: "https://www.pornhub.com/view_video.php?viewkey=...",
-      formats: [
-        { quality: "1080p", size: "Unknown", type: "MP4" },
-        { quality: "720p", size: "Unknown", type: "MP4" }
-      ]
+    // Replace with the target search URL
+    const searchUrl = `https://example.com{encodeURIComponent(q)}`;
+    const { data } = await axios.get(searchUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36' }
     });
-    */
+
+    const $ = cheerio.load(data);
+    const results = [];
+
+    // Use CSS selectors specific to the target site's structure
+    $('.result-item').each((i, el) => {
+      const title = $(el).find('.title-selector').text().trim();
+      const link = $(el).find('a').attr('href');
+      const image = $(el).find('img').attr('src');
+
+      if (title && link) {
+        results.push({ title, link, image });
+      }
+    });
 
     res.status(200).json({ results });
   } catch (error) {
-    console.error('API Error:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Search process failed', details: error.message });
   }
 }
-```
