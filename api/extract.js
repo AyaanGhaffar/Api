@@ -1,3 +1,4 @@
+```javascript
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -13,39 +14,37 @@ export default async function handler(req, res) {
     const parsedUrl = new URL(url);
     const hostname = parsedUrl.hostname.replace('www.', '');
 
+    // Restrict to Pornhub only
+    if (!hostname.includes('pornhub.com')) {
+      return res.status(400).json({ error: 'Only Pornhub URLs are supported' });
+    }
+
+    const viewkey = parsedUrl.searchParams.get("viewkey");
+
+    if (!viewkey) {
+      return res.status(400).json({ error: 'Invalid URL: viewkey is missing' });
+    }
+
     let videoData = {
-      title: "Extracted Video from " + hostname,
+      title: "Extracted Video from Pornhub",
       thumbnail: "https://via.placeholder.com/640x360",
       duration: "Unknown",
-      source: hostname,
+      source: "pornhub.com",
       originalUrl: url,
       formats: [
         { quality: "1080p", size: "Unknown", type: "MP4" },
-        { quality: "Audio", size: "Unknown", type: "MP3" }
+        { quality: "720p", size: "Unknown", type: "MP4" }
       ]
     };
 
-    // YouTube Metadata Extraction
-    if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) {
-      let videoId = parsedUrl.searchParams.get("v");
-      if (!videoId && hostname.includes("youtu.be")) {
-        videoId = parsedUrl.pathname.slice(1);
-      }
-      
-      if (videoId) {
-        const ytReq = await fetch(`https://pipedapi.kavin.rocks/streams/${videoId}`);
-        if (ytReq.ok) {
-          const v = await ytReq.json();
-          videoData.title = v.title;
-          videoData.thumbnail = v.videoThumbnails?.find(t => t.quality === 'medium')?.url || v.videoThumbnails?.[0]?.url;
-          videoData.duration = v.lengthSeconds + 's';
-        }
-      }
-    }
+    // TODO: Insert your actual scraping logic here.
+    // Example: Use 'yt-dlp' via child_process or a dedicated npm scraper package 
+    // to fetch the real video metadata and direct MP4 URLs using the viewkey.
 
     res.status(200).json({ video: videoData });
   } catch (error) {
     console.error('Extraction Error:', error);
     res.status(500).json({ error: 'Failed to extract video data' });
   }
-      }
+}
+```
