@@ -1,0 +1,10 @@
+{
+  "name": "anydl-api",
+  "version": "1.0.0",
+  "description": "Video search and extraction API",
+  "main": "api/search.js",
+  "scripts": {
+    "start": "node api/search.js"
+  },
+  "dependencies": {}
+}
