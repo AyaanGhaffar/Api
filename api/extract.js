@@ -1,50 +1,27 @@
-```javascript
-export default async function handler(req, res) {
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+import axios from 'axios';
+import * as cheerio from 'cheerio';
 
+export default async function handler(req, res) {
   const { url } = req.query;
-  
-  if (!url) {
-    return res.status(400).json({ error: 'URL is required' });
-  }
+  if (!url) return res.status(400).json({ error: 'URL is required' });
 
   try {
-    const parsedUrl = new URL(url);
-    const hostname = parsedUrl.hostname.replace('www.', '');
+    const { data } = await axios.get(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36' }
+    });
 
-    // Restrict to Pornhub only
-    if (!hostname.includes('pornhub.com')) {
-      return res.status(400).json({ error: 'Only Pornhub URLs are supported' });
-    }
-
-    const viewkey = parsedUrl.searchParams.get("viewkey");
-
-    if (!viewkey) {
-      return res.status(400).json({ error: 'Invalid URL: viewkey is missing' });
-    }
-
-    let videoData = {
-      title: "Extracted Video from Pornhub",
-      thumbnail: "https://via.placeholder.com/640x360",
-      duration: "Unknown",
-      source: "pornhub.com",
-      originalUrl: url,
-      formats: [
-        { quality: "1080p", size: "Unknown", type: "MP4" },
-        { quality: "720p", size: "Unknown", type: "MP4" }
-      ]
+    const $ = cheerio.load(data);
+    
+    // Extracting standard Open Graph meta tags
+    const pageData = {
+      title: $('meta[property="og:title"]').attr('content') || $('title').text(),
+      image: $('meta[property="og:image"]').attr('content'),
+      description: $('meta[property="og:description"]').attr('content'),
+      originalUrl: url
     };
 
-    // TODO: Insert your actual scraping logic here.
-    // Example: Use 'yt-dlp' via child_process or a dedicated npm scraper package 
-    // to fetch the real video metadata and direct MP4 URLs using the viewkey.
-
-    res.status(200).json({ video: videoData });
+    res.status(200).json({ data: pageData });
   } catch (error) {
-    console.error('Extraction Error:', error);
-    res.status(500).json({ error: 'Failed to extract video data' });
+    res.status(500).json({ error: 'Extraction process failed', details: error.message });
   }
 }
-```
